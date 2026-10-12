@@ -1,0 +1,45 @@
+name: SynthPulse Pi Router and Agent Bridges
+on:
+  workflow_dispatch:
+  push:
+    branches: [synthpulse/pi]
+    paths: ['synthpulse/**', '.github/workflows/synthpulse-pi.yml']
+permissions:
+  contents: write
+concurrency:
+  group: synthpulse-pi
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build own router and CLI bridge image
+        run: |
+          docker build --target runner-base --build-arg OMNIROUTE_BUILD_WORKERS=2 -t synthpulse-omniroute-base .
+          docker build -f synthpulse/Dockerfile -t synthpulse-router-pi:${GITHUB_SHA} .
+      - name: Verify tools and archive
+        run: |
+          test "$(docker image inspect synthpulse-router-pi:${GITHUB_SHA} --format '{{.Architecture}}')" = arm64
+          docker run --rm --network none --entrypoint codex synthpulse-router-pi:${GITHUB_SHA} --version
+          docker run --rm --network none --entrypoint claude synthpulse-router-pi:${GITHUB_SHA} --version
+          docker run --rm --network none --entrypoint python3 synthpulse-router-pi:${GITHUB_SHA} -c "import sys; sys.path.insert(0, '/opt/synthpulse/claude-bridge'); import bridge; assert bridge.HOST == '127.0.0.1'"
+          mkdir -p pi-release
+          docker save synthpulse-router-pi:${GITHUB_SHA} | gzip > pi-release/synthpulse-router-arm64.tar.gz
+          python3 - <<'BUILD'
+          import json,os,pathlib,hashlib
+          p=pathlib.Path('pi-release');f=p/'synthpulse-router-arm64.tar.gz'
+          h=hashlib.file_digest(f.open('rb'),'sha256').hexdigest()
+          data={'repository':os.environ['GITHUB_REPOSITORY'],'commit':os.environ['GITHUB_SHA'],'run':os.environ['GITHUB_RUN_ID'],'architecture':'arm64','hardware_tested':False,'image':'synthpulse-router-pi:'+os.environ['GITHUB_SHA'],'sha256':{f.name:h},'codex':'0.162.1','claude':'2.1.296'}
+          (p/'provenance.json').write_text(json.dumps(data,indent=2)+'\n')
+          (p/'SHA256SUMS').write_text(h+'  '+f.name+'\n')
+          BUILD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: synthpulse-router-pi
+          path: pi-release/
+      - name: Publish own ARM64 prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "synthpulse-pi-${GITHUB_RUN_NUMBER}" pi-release/* --target "$GITHUB_SHA" --prerelease --title "SynthPulse Pi Router, Codex and Claude bridges" --notes "Own OmniRoute fork, ARM64 build, official Codex/Claude CLIs and vendored Claude bridge. No accounts or credentials included. Pi hardware and authenticated model tests remain pending."
