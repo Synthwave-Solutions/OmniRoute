@@ -1,0 +1,18 @@
+{
+  "plugin": "NousResearch/hermes-plugin-claude-subscription-directsdk",
+  "plugin_commit": "8513ef82a493f3a4c21f1d2ce89ed93738240612",
+  "content": {
+    "account_pool.py": "11e9f673852018937ab542eb52ca1e8a0faaa766f8c453dc10e7efdf5eb6bda5",
+    "bridge.py": "e04c062e27934b918ecb4c65770a1f7dc8226e052ea51e65a2bd06d89edac586",
+    "hermes-support/LICENSE": "821556e6336796450ab852d375117b48a4887e71d255794fd6318d99982a5ab6",
+    "plugin/admission.py": "3a1b30cd15017ae5faa9424d32280c4194e5a280d632884da80c029f36ee846c",
+    "plugin/model_catalog.py": "3cbb588caa3838aa2e5aa9039fc8c52e6f58a84ea80702aa2a413fcd10a34ff7",
+    "plugin/inert_mcp.py": "bf20a09b2358600981b115c32845ec24722cb66adfc18d247d1c35ed999a0e0a",
+    "plugin/directsdk_setup.py": "0e78787d7771ca83e81c4e2d6f9b224bcf7bae175441c08d7aef2f50864084ab",
+    "plugin/LICENSE": "f26e906c042707a257816cf8a0396556b596be540b8add290132b8d72c080d60",
+    "plugin/directsdk.py": "cadcd3299df3327de3d4e7865ecbdcffb0e5c99698ee0835ded25e0143a3c095",
+    "hermes-support/tools/schema_sanitizer.py": "8f58baf2faf47fe95b47d3372fc8a29ed13854ca0b192980fbb6041981c507cf",
+    "hermes-support/agent/reasoning_effort.py": "d0d9ce5c69f4eddb7e20ce0f131f45c0bfa9dbafb88a79e21270939f6972c776"
+  },
+  "contains_credentials": false
+}
