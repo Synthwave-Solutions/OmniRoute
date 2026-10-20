@@ -5,6 +5,13 @@ const http = require("node:http");
 const HIGH_RISK_METHOD_RULES = [
   [/^\/api\/auth\/login\/?$/, ["POST"]],
   [/^\/api\/auth\/logout\/?$/, ["POST"]],
+  [/^\/api\/auth\/(csrf|status)\/?$/, ["GET"]],
+  // Literal collections must precede the generic key-id route.
+  [/^\/api\/keys\/groups\/?$/, ["GET", "POST"]],
+  [/^\/api\/keys\/groups\/[^/]+\/?$/, ["GET", "PUT", "DELETE"]],
+  [/^\/api\/keys\/groups\/[^/]+\/(keys|permissions)\/?$/, ["GET", "POST", "DELETE"]],
+  [/^\/api\/keys\/[^/]+\/regenerate\/?$/, ["POST"]],
+  [/^\/api\/keys\/[^/]+\/(reveal|usage-limits)\/?$/, ["GET"]],
   [/^\/api\/keys\/?$/, ["GET", "POST"]],
   [/^\/api\/keys\/[^/]+\/?$/, ["GET", "PATCH", "DELETE"]],
   [/^\/api\/keys\/[^/]+\/devices\/?$/, ["GET"]],

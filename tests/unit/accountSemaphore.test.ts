@@ -78,7 +78,10 @@ describe("accountSemaphore acquireMany", () => {
     releaseGlobal();
   });
 
-  it("times out an atomic waiter without leaking reservations", async () => {
+  it("times out an atomic waiter without leaking reservations", async (t) => {
+    // The production timeout is unref'd; model the live request that owns this wait.
+    const keepAlive = setTimeout(() => {}, 1_000);
+    t.after(() => clearTimeout(keepAlive));
     const releaseGlobal = await acquire("global", { maxConcurrency: 1 });
     await assert.rejects(
       acquireMany(

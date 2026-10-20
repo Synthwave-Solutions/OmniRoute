@@ -35,6 +35,7 @@ jobs:
     # mid-run) — 25min leaves real headroom for the actual DAST steps.
     timeout-minutes: 25
     env:
+      INITIAL_PASSWORD: ci-dast-isolated-password-2026
       JWT_SECRET: ci-build-secret-with-sufficient-length-for-validation
       API_KEY_SECRET: ci-api-key-secret-with-sufficient-length-aaaa
     steps:
@@ -46,12 +47,24 @@ jobs:
           node-version: "24"
           cache: npm
       - uses: ./.github/actions/npm-ci-retry
+      - name: Reserve build swap on the disposable runner
+        run: |
+          sudo fallocate -l 8G "$RUNNER_TEMP/omniroute-dast.swap"
+          sudo chmod 600 "$RUNNER_TEMP/omniroute-dast.swap"
+          sudo mkswap "$RUNNER_TEMP/omniroute-dast.swap"
+          sudo swapon "$RUNNER_TEMP/omniroute-dast.swap"
+          free -h
       - name: Build CLI bundle
         env:
           OMNIROUTE_BUILD_BACKEND_ONLY: "1"
-        run: npm run build:cli
+          # Bound the JS heap on hosted runners; Turbopack's native allocations
+          # are not limited by NODE_OPTIONS and can terminate the runner mid-build.
+          OMNIROUTE_USE_TURBOPACK: "0"
+          OMNIROUTE_BUILD_MEMORY_MB: "8192"
+        run: /usr/bin/time -v npm run build:cli
       - name: Start OmniRoute
         env:
+          DATA_DIR: ${{ runner.temp }}/omniroute-dast
           PORT: "20128"
           INJECTION_GUARD_MODE: block
           REQUIRE_API_KEY: "false"
@@ -59,13 +72,17 @@ jobs:
           node dist/server.js > server.log 2>&1 &
           echo $! > server.pid
           for _ in $(seq 1 30); do
-            if curl -sf http://localhost:20128/api/monitoring/health >/dev/null; then echo up; break; fi
+            if curl -sf http://localhost:20128/api/monitoring/health >/dev/null; then echo up; exit 0; fi
             sleep 2
           done
+          tail -100 server.log
+          exit 1
+      - name: Authenticated management smoke
+        run: node scripts/test/dast-authenticated-smoke.mjs http://localhost:20128
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - run: pip install schemathesis
+      - run: pip install schemathesis==4.32.1
       - name: Schemathesis smoke (high-risk endpoints, blocking)
         run: |
           # /api/auth/oidc/* is a BROWSER redirect flow (302 to the IdP, 302 back to
