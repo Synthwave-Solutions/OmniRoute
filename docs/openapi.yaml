@@ -8698,6 +8698,8 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
   /api/auth/status:
     get:
       tags:
@@ -9851,6 +9853,8 @@ paths:
         "200":
           description: OK
   /api/keys/{id}/regenerate:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
     post:
       tags:
         - Keys
@@ -9858,7 +9862,11 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
   /api/keys/{id}/reveal:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
     get:
       tags:
         - Keys
@@ -9866,7 +9874,11 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
   /api/keys/{id}/usage-limits:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
     get:
       tags:
         - Keys
@@ -9874,6 +9886,8 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
   /api/keys/groups:
     get:
       tags:
@@ -9882,6 +9896,8 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
     post:
       tags:
         - Keys
@@ -9889,7 +9905,11 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
   /api/keys/groups/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
     delete:
       tags:
         - Keys
@@ -9897,6 +9917,8 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
     get:
       tags:
         - Keys
@@ -9904,6 +9926,8 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
     put:
       tags:
         - Keys
@@ -9911,7 +9935,11 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
   /api/keys/groups/{id}/keys:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
     delete:
       tags:
         - Keys
@@ -9919,6 +9947,8 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
     get:
       tags:
         - Keys
@@ -9926,6 +9956,8 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
     post:
       tags:
         - Keys
@@ -9933,7 +9965,11 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
   /api/keys/groups/{id}/permissions:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
     delete:
       tags:
         - Keys
@@ -9941,6 +9977,8 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
     get:
       tags:
         - Keys
@@ -9948,6 +9986,8 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
     post:
       tags:
         - Keys
@@ -9955,6 +9995,8 @@ paths:
       responses:
         "200":
           description: OK
+        "401":
+          description: Authentication required
   /api/local/redis/start:
     post:
       tags:

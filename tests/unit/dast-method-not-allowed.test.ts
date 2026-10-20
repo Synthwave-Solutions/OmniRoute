@@ -130,3 +130,38 @@ test("OpenAPI documents high-risk route auth and setup responses", () => {
   assert.match(login, /"403":\n\s+description: Password setup required/);
   assert.match(login, /"429":\n\s+description: Too many failed attempts/);
 });
+
+// Collection names must never be mistaken for key IDs by the raw HTTP guard.
+for (const [url, methods] of [
+  ["/api/keys/groups", ["GET", "POST"]],
+  ["/api/keys/groups/group-id", ["GET", "PUT", "DELETE"]],
+  ["/api/keys/groups/group-id/keys", ["GET", "POST", "DELETE"]],
+  ["/api/keys/groups/group-id/permissions", ["GET", "POST", "DELETE"]],
+  ["/api/keys/key-id/regenerate", ["POST"]],
+  ["/api/keys/key-id/reveal", ["GET"]],
+  ["/api/keys/key-id/usage-limits", ["GET"]],
+  ["/api/auth/csrf", ["GET"]],
+  ["/api/auth/status", ["GET"]],
+] as const) {
+  test(`method guard preserves valid methods and rejects QUERY for ${url}`, () => {
+    const headers = new Map<string, string>();
+    const response = {
+      statusCode: 200,
+      setHeader(name: string, value: string) {
+        headers.set(name, value);
+      },
+      end() {},
+    };
+    for (const suffix of ["", "/", "?probe=1"]) {
+      for (const method of methods) {
+        assert.equal(maybeHandleDisallowedMethod({ method, url: url + suffix }, response), false);
+      }
+      assert.equal(
+        maybeHandleDisallowedMethod({ method: "QUERY", url: url + suffix }, response),
+        true
+      );
+      assert.equal(response.statusCode, 405);
+      assert.equal(headers.get("Allow"), methods.join(", "));
+    }
+  });
+}
