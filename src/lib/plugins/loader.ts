@@ -268,6 +268,18 @@ export async function loadPlugin(
     }
   > = new Map();
   let callCounter = 0;
+  let unavailable: Error | null = null;
+
+  // A disconnected/terminated child cannot answer another IPC call. Settle all
+  // waiters now rather than retaining a full hook timeout on every request.
+  const failPending = (error: Error) => {
+    unavailable ??= error;
+    for (const pending of pendingCalls.values()) {
+      clearTimeout(pending.timer);
+      pending.reject(error);
+    }
+    pendingCalls.clear();
+  };
 
   child.on(
     "message",
@@ -291,15 +303,16 @@ export async function loadPlugin(
 
   child.on("error", (err) => {
     log.error("loader.process_error", { name: manifest.name, error: err.message });
+    failPending(err);
   });
 
-  child.on("exit", (code) => {
-    log.info("loader.process_exit", { name: manifest.name, code });
-    for (const [, pending] of pendingCalls) {
-      clearTimeout(pending.timer);
-      pending.reject(new Error(`Plugin process exited with code ${code}`));
-    }
-    pendingCalls.clear();
+  child.on("disconnect", () => {
+    failPending(new Error("Plugin IPC channel disconnected"));
+  });
+
+  child.on("exit", (code, signal) => {
+    log.info("loader.process_exit", { name: manifest.name, code, signal });
+    failPending(new Error(`Plugin process exited (${signal ?? code})`));
     removeHostScript(hostScriptPath);
   });
 
@@ -307,6 +320,10 @@ export async function loadPlugin(
   // SIGTERM → SIGKILL on timeout; NOTIFICATION_HOOKS only drop the pending call.
   const callHook = (hook: string, payload: unknown, timeout = hookTimeoutMs): Promise<unknown> => {
     return new Promise((resolve, reject) => {
+      if (unavailable || !child.connected || child.exitCode !== null || child.signalCode !== null) {
+        reject(unavailable ?? new Error("Plugin process is unavailable"));
+        return;
+      }
       const id = String(++callCounter);
       const timer = setTimeout(() => {
         pendingCalls.delete(id);
@@ -330,7 +347,16 @@ export async function loadPlugin(
       }, timeout);
 
       pendingCalls.set(id, { resolve, reject, timer });
-      child.send({ type: "call", id, hook, payload });
+      try {
+        child.send({ type: "call", id, hook, payload }, (error) => {
+          if (error) failPending(error);
+        });
+      } catch (error: unknown) {
+        // Serialization can fail synchronously while the child remains healthy.
+        clearTimeout(timer);
+        pendingCalls.delete(id);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
     });
   };
 
@@ -424,6 +450,11 @@ export async function loadPlugin(
   });
 
   const cleanup = () => {
+    failPending(new Error("Plugin unloaded"));
+    if (child.exitCode !== null || child.signalCode !== null) {
+      removeHostScript(hostScriptPath);
+      return;
+    }
     child.kill("SIGTERM");
     // Escalate to SIGKILL after grace period
     escalateToSigkill(child);
