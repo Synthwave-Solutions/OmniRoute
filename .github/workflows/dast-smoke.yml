@@ -35,7 +35,6 @@ jobs:
     # mid-run) — 25min leaves real headroom for the actual DAST steps.
     timeout-minutes: 25
     env:
-      DATA_DIR: ${{ runner.temp }}/omniroute-dast
       INITIAL_PASSWORD: ci-dast-isolated-password-2026
       JWT_SECRET: ci-build-secret-with-sufficient-length-for-validation
       API_KEY_SECRET: ci-api-key-secret-with-sufficient-length-aaaa
@@ -54,6 +53,7 @@ jobs:
         run: npm run build:cli
       - name: Start OmniRoute
         env:
+          DATA_DIR: ${{ runner.temp }}/omniroute-dast
           PORT: "20128"
           INJECTION_GUARD_MODE: block
           REQUIRE_API_KEY: "false"
