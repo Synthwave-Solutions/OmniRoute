@@ -47,14 +47,21 @@ jobs:
           node-version: "24"
           cache: npm
       - uses: ./.github/actions/npm-ci-retry
+      - name: Reserve build swap on the disposable runner
+        run: |
+          sudo fallocate -l 8G "$RUNNER_TEMP/omniroute-dast.swap"
+          sudo chmod 600 "$RUNNER_TEMP/omniroute-dast.swap"
+          sudo mkswap "$RUNNER_TEMP/omniroute-dast.swap"
+          sudo swapon "$RUNNER_TEMP/omniroute-dast.swap"
+          free -h
       - name: Build CLI bundle
         env:
           OMNIROUTE_BUILD_BACKEND_ONLY: "1"
           # Bound the JS heap on hosted runners; Turbopack's native allocations
           # are not limited by NODE_OPTIONS and can terminate the runner mid-build.
           OMNIROUTE_USE_TURBOPACK: "0"
-          OMNIROUTE_BUILD_MEMORY_MB: "5120"
-        run: npm run build:cli
+          OMNIROUTE_BUILD_MEMORY_MB: "8192"
+        run: /usr/bin/time -v npm run build:cli
       - name: Start OmniRoute
         env:
           DATA_DIR: ${{ runner.temp }}/omniroute-dast
