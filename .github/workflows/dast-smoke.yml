@@ -50,6 +50,10 @@ jobs:
       - name: Build CLI bundle
         env:
           OMNIROUTE_BUILD_BACKEND_ONLY: "1"
+          # Bound the JS heap on hosted runners; Turbopack's native allocations
+          # are not limited by NODE_OPTIONS and can terminate the runner mid-build.
+          OMNIROUTE_USE_TURBOPACK: "0"
+          OMNIROUTE_BUILD_MEMORY_MB: "5120"
         run: npm run build:cli
       - name: Start OmniRoute
         env:
