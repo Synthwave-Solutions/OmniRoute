@@ -101,3 +101,22 @@ test("non-200 stream persists a failure row (success=false, status string)", asy
   assert.equal(row.status, "503");
   assert.equal(row.errorCode, "upstream_5xx");
 });
+
+test("a stream without observed output persists unknown TTFT, not total latency", async () => {
+  for (const ttft of [undefined, null]) {
+    const provider = `unknown-ttft-${String(ttft)}`;
+    recordStreamingUsageStats(
+      { prompt_tokens: 20, completion_tokens: 0 },
+      baseCtx({ provider, ttft, startTime: Date.now() - 5000 })
+    );
+    const rows = await waitForRows(provider, 1);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].timeToFirstTokenMs, null);
+    const stored = coreDb
+      .getDbInstance()
+      .prepare("SELECT ttft_ms, latency_ms FROM usage_history WHERE provider = ?")
+      .get(provider) as { ttft_ms: number | null; latency_ms: number };
+    assert.equal(stored.ttft_ms, null);
+    assert.ok(stored.latency_ms >= 5000);
+  }
+});
