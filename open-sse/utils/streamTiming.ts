@@ -51,7 +51,7 @@ export interface StreamTiming {
   /**
    * Inspect a forwarded SSE chunk and mark the first one that carries output. Only the first
    * MAX_OUTPUT_PROBES chunks are parsed, so an unrecognized client format cannot turn this into
-   * per-chunk parsing for the whole stream; TTFT then falls back to latency, as before.
+   * per-chunk parsing for the whole stream; first-output timing then remains unknown.
    */
   observeOutput(bytes: Uint8Array): void;
   markInterrupted(): void;
@@ -87,7 +87,7 @@ const MAX_OUTPUT_PROBES = 64;
 /**
  * Request start → first chunk with text, reasoning or a tool call: `originOffsetMs` is the time
  * from the request start to the stream start. Undefined when the stream carried no output, which
- * keeps the usage row's latency fallback.
+ * is persisted as unknown by the streaming usage writer, never as total latency.
  */
 export function requestTtftMs(
   originOffsetMs: number | null,

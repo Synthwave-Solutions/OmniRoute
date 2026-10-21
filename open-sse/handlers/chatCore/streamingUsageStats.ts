@@ -21,7 +21,7 @@ export type RecordStreamingUsageStatsContext = {
   model: string | null | undefined;
   streamStatus: number;
   startTime: number;
-  ttft: number;
+  ttft: number | null | undefined;
   streamErrorCode: string | null | undefined;
   connectionId: string | null | undefined;
   apiKeyInfo: { id?: string | null; name?: string | null } | null | undefined;
@@ -41,7 +41,7 @@ function persistStreamingUsageRow(usage: object, ctx: RecordStreamingUsageStatsC
     status: String(streamStatus),
     success: streamStatus === 200,
     latencyMs: Date.now() - startTime,
-    timeToFirstTokenMs: ttft,
+    timeToFirstTokenMs: ttft ?? null,
     errorCode: streamStatus === 200 ? null : streamErrorCode || String(streamStatus),
     timestamp: new Date().toISOString(),
     connectionId: ctx.connectionId || undefined,
